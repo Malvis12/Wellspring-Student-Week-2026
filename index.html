@@ -769,6 +769,28 @@
             <i class="ri-layout-grid-line"></i> View Categories
           </button>
         </div>
+        <!-- Countdown Timer -->
+        <div id="countdownSection" style="display:none;margin-top:1.5rem;">
+          <p style="font-size:0.85rem;color:rgba(255,255,255,0.7);margin-bottom:0.75rem;letter-spacing:0.1em;text-transform:uppercase;">Voting closes in</p>
+          <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;">
+            <div style="background:rgba(255,255,255,0.15);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.3);border-radius:0.75rem;padding:0.75rem 1.25rem;min-width:70px;text-align:center;">
+              <div id="cdDays" style="font-size:2rem;font-weight:800;color:#FFD700;line-height:1;">00</div>
+              <div style="font-size:0.65rem;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:0.1em;">Days</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.15);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.3);border-radius:0.75rem;padding:0.75rem 1.25rem;min-width:70px;text-align:center;">
+              <div id="cdHours" style="font-size:2rem;font-weight:800;color:#FFD700;line-height:1;">00</div>
+              <div style="font-size:0.65rem;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:0.1em;">Hours</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.15);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.3);border-radius:0.75rem;padding:0.75rem 1.25rem;min-width:70px;text-align:center;">
+              <div id="cdMins" style="font-size:2rem;font-weight:800;color:#FFD700;line-height:1;">00</div>
+              <div style="font-size:0.65rem;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:0.1em;">Mins</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.15);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.3);border-radius:0.75rem;padding:0.75rem 1.25rem;min-width:70px;text-align:center;">
+              <div id="cdSecs" style="font-size:2rem;font-weight:800;color:#FFD700;line-height:1;">00</div>
+              <div style="font-size:0.65rem;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:0.1em;">Secs</div>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -1035,7 +1057,7 @@
             </div>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem;">
               <span style="font-size:0.875rem;color:#444;">Account Name</span>
-              <span style="font-weight:700;color:#1a1a1a;">Korede-Ogundare Temiloluwa</span>
+              <span style="font-weight:700;color:#1a1a1a;">Korede Temioluwa</span>
             </div>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
               <span style="font-size:0.875rem;color:#444;">Account Number</span>
@@ -1396,8 +1418,208 @@
       document.addEventListener("DOMContentLoaded", async () => {
         setupVoteFormListener();
         setupRealTimeListeners();
+        setupResultsListener();
         await loadData();
       });
-    </script>
-  </body>
+    
+      // ── Countdown Timer ──────────────────────────────────────────────
+      let countdownInterval = null;
+
+      function startCountdown(endTimeStr) {
+        const section = document.getElementById("countdownSection");
+        if (!endTimeStr) { section.style.display = "none"; return; }
+
+        section.style.display = "block";
+
+        function tick() {
+          const now = new Date().getTime();
+          const end = new Date(endTimeStr).getTime();
+          const diff = end - now;
+
+          if (diff <= 0) {
+            clearInterval(countdownInterval);
+            document.getElementById("cdDays").textContent = "00";
+            document.getElementById("cdHours").textContent = "00";
+            document.getElementById("cdMins").textContent = "00";
+            document.getElementById("cdSecs").textContent = "00";
+            // Auto-lock voting
+            votingOpen = false;
+            return;
+          }
+
+          const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+          const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+          const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+          const secs = Math.floor((diff % (1000 * 60)) / 1000);
+
+          document.getElementById("cdDays").textContent = String(days).padStart(2, "0");
+          document.getElementById("cdHours").textContent = String(hours).padStart(2, "0");
+          document.getElementById("cdMins").textContent = String(mins).padStart(2, "0");
+          document.getElementById("cdSecs").textContent = String(secs).padStart(2, "0");
+        }
+
+        tick();
+        if (countdownInterval) clearInterval(countdownInterval);
+        countdownInterval = setInterval(tick, 1000);
+      }
+
+      // ── Confetti ─────────────────────────────────────────────────────
+      function launchConfetti() {
+        const canvas = document.getElementById("confettiCanvas");
+        if (!canvas) return;
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        const ctx = canvas.getContext("2d");
+        const pieces = [];
+        const colors = ["#FFD700","#FFA500","#FF6B6B","#00C9A7","#0066cc","#ffffff","#FF69B4"];
+
+        for (let i = 0; i < 180; i++) {
+          pieces.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height - canvas.height,
+            w: Math.random() * 12 + 5,
+            h: Math.random() * 6 + 3,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            rot: Math.random() * 360,
+            speed: Math.random() * 4 + 2,
+            rotSpeed: (Math.random() - 0.5) * 4,
+            drift: (Math.random() - 0.5) * 2,
+          });
+        }
+
+        let frame;
+        function draw() {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          pieces.forEach((p) => {
+            ctx.save();
+            ctx.translate(p.x + p.w / 2, p.y + p.h / 2);
+            ctx.rotate((p.rot * Math.PI) / 180);
+            ctx.fillStyle = p.color;
+            ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+            ctx.restore();
+            p.y += p.speed;
+            p.x += p.drift;
+            p.rot += p.rotSpeed;
+          });
+          const alive = pieces.some((p) => p.y < canvas.height + 20);
+          if (alive) frame = requestAnimationFrame(draw);
+          else ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        if (frame) cancelAnimationFrame(frame);
+        draw();
+      }
+
+      // ── Winners Reveal ───────────────────────────────────────────────
+      function showWinnersOverlay() {
+        const overlay = document.getElementById("winnersOverlay");
+        const grid = document.getElementById("winnersGrid");
+        overlay.style.display = "block";
+        grid.innerHTML = "";
+
+        // Find winner (most votes) per category
+        const winners = categories.map((cat) => {
+          const catCandidates = candidates.filter((c) => c.categoryId === cat.id);
+          if (!catCandidates.length) return null;
+          const winner = catCandidates.reduce((a, b) => (b.votes || 0) > (a.votes || 0) ? b : a);
+          return { category: cat.name, winner };
+        }).filter(Boolean);
+
+        // Staggered reveal — one card every 800ms
+        winners.forEach((item, idx) => {
+          const card = document.createElement("div");
+          card.style.cssText = `
+            background: linear-gradient(135deg, rgba(255,215,0,0.08), rgba(255,165,0,0.05));
+            border: 1.5px solid rgba(255,215,0,0.4);
+            border-radius: 1.25rem;
+            padding: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            opacity: 0;
+            transform: translateY(40px) scale(0.95);
+            transition: opacity 0.7s ease, transform 0.7s ease;
+            flex-wrap: wrap;
+          `;
+
+          const photoURL = item.winner.photoURL || "https://via.placeholder.com/120";
+          card.innerHTML = `
+            <div style="position:relative;flex-shrink:0;">
+              <img src="${photoURL}" alt="${item.winner.name}"
+                style="width:110px;height:110px;border-radius:50%;object-fit:cover;border:3px solid #FFD700;display:block;" />
+              <div style="position:absolute;bottom:-8px;right:-8px;background:#FFD700;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;">🏆</div>
+            </div>
+            <div style="flex:1;min-width:180px;">
+              <p style="font-size:0.75rem;color:rgba(255,215,0,0.7);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:0.4rem;">${item.category}</p>
+              <h2 style="font-size:1.75rem;font-weight:900;color:#ffffff;margin-bottom:0.4rem;">${item.winner.name}</h2>
+              <p style="font-size:1rem;color:#FFD700;font-weight:700;">${(item.winner.votes || 0).toLocaleString()} votes</p>
+            </div>
+          `;
+
+          grid.appendChild(card);
+
+          // Animate in with stagger
+          setTimeout(() => {
+            card.style.opacity = "1";
+            card.style.transform = "translateY(0) scale(1)";
+            // Fire confetti on each reveal
+            if (idx === 0) launchConfetti();
+            else if (idx % 2 === 0) launchConfetti();
+          }, idx * 900 + 400);
+        });
+      }
+
+      // ── Listen for results reveal from Firestore ─────────────────────
+      function setupResultsListener() {
+        db.collection("settings").doc("status").onSnapshot((snap) => {
+          if (!snap.exists) return;
+          const data = snap.data();
+
+          // Countdown
+          if (data.votingEndTime) startCountdown(data.votingEndTime);
+
+          // Results reveal
+          if (data.resultsRevealed === true) {
+            // Small delay so candidates data is loaded
+            setTimeout(showWinnersOverlay, 600);
+          } else {
+            const overlay = document.getElementById("winnersOverlay");
+            if (overlay) overlay.style.display = "none";
+          }
+
+          // Voting open/closed
+          if (data.votingOpen === false) votingOpen = false;
+        });
+      }
+
+</script>
+  
+    <!-- Winners Takeover Overlay -->
+    <div id="winnersOverlay" style="display:none;position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#0a0a1a 0%,#0d1b3e 50%,#0a0a1a 100%);overflow-y:auto;">
+
+      <!-- Confetti canvas -->
+      <canvas id="confettiCanvas" style="position:fixed;inset:0;pointer-events:none;z-index:10000;"></canvas>
+
+      <!-- Content -->
+      <div style="max-width:900px;margin:0 auto;padding:3rem 1.5rem;">
+
+        <!-- Header -->
+        <div style="text-align:center;margin-bottom:3rem;">
+          <div style="font-size:4rem;margin-bottom:1rem;">🏆</div>
+          <h1 style="font-size:2.5rem;font-weight:900;background:linear-gradient(135deg,#FFD700,#FFA500,#FFD700);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:0.5rem;">
+            And The Winners Are...
+          </h1>
+          <p style="color:rgba(255,255,255,0.6);font-size:1rem;">Wellspring Student Week 2026</p>
+        </div>
+
+        <!-- Winners Grid -->
+        <div id="winnersGrid" style="display:flex;flex-direction:column;gap:2rem;"></div>
+
+        <div style="text-align:center;margin-top:3rem;color:rgba(255,255,255,0.4);font-size:0.85rem;">
+          Congratulations to all winners 🎉
+        </div>
+      </div>
+    </div>
+
+</body>
 </html>
